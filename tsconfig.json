@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "es6",                          
+    "module": "CommonJS",                      
+    "lib": ["es6", "dom"],                     
+    "allowJs": false,                          
+    "checkJs": false,                          
+    "outDir": "./dist",                        
+    "rootDir": "./src",                        
+    "strict": true,                            
+    "moduleResolution": "Node10",                
+    "esModuleInterop": true,                   
+    "resolveJsonModule": true,                 
+    "sourceMap": true,                         
+    "strictNullChecks": true,                  
+    "noImplicitAny": true,                     
+    "noImplicitThis": true,                    
+           
+  },
+  "include": [
+    "src/**/*"                                 
+  ],
+  "exclude": [
+    "node_modules",                            
+    "dist"                                     
+  ]
+}
