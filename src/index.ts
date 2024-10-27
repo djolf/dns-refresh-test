@@ -10,6 +10,7 @@ enum IPStatus {
 type IPAddress = {
   address: string
   status: IPStatus
+  hangingCount: number
 }
 
 type DnsList = {
@@ -19,6 +20,8 @@ type DnsList = {
 type DnsResponse = {
   Answer: { data: string }[]; 
 }
+
+const HANGING_THRESHOLD = 3;
 
 const dnsList: DnsList = {};
 
@@ -58,23 +61,26 @@ async function getDnsRecord(hostname: string) {
       console.log(`No DNS record found for ${hostname}`);
       return;
     }
-    const newIPAddressList: string[] = Answer.map((record: any) => record.data);
-    const newIPObjList: IPAddress[] = Answer.map((record: any) => ({
-      address: record.data,
-      status: IPStatus.ACTIVE
+    const newIPAddressList: string[] = Answer.map(record => record.data);
+    const newIPObjList: IPAddress[] = newIPAddressList.map(ip => ({
+      address: ip,
+      status: IPStatus.ACTIVE,
+      hangingCount: 0 
     }));
-    const mergedIPs = [...new Set([...newIPObjList, ...dnsList[hostname]])];
 
-    dnsList[hostname] = mergedIPs.map((ip: IPAddress) => {
-      // if the ip is not from new list, it is no longer associated. set to HANGING
+    // Filter out old hanging IPs or increment hanging count if they're not in the new list
+    const existingIPs = dnsList[hostname] || [];
+    const updatedIPs = existingIPs.map(ip => {
       if (!newIPAddressList.includes(ip.address)) {
-        return {
-          address: ip.address,
-          status: IPStatus.HANGING,
-        }
+        return { ...ip, status: IPStatus.HANGING, hangingCount: ip.hangingCount + 1 };
       }
       return ip;
-    })
+    }).filter(ip => ip.hangingCount <= HANGING_THRESHOLD); // Remove IPs that exceed the threshold
+
+    // Merge the new IPs with the filtered existing IPs
+    dnsList[hostname] = Array.from(new Map(
+      [...updatedIPs, ...newIPObjList].map(ip => [ip.address, ip])
+    ).values());;
     console.log(`Finished getting DNS record for ${hostname}`);
   } catch (error) {
     console.error("Error getting DNS: ", error);
