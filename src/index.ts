@@ -1,9 +1,26 @@
-import * as readline from 'readline';
-import * as fs from 'fs';
-import * as dns from 'dns';
-import * as util from 'util';
+import readline from 'readline';
+import fs from 'fs';
+import fetch from 'node-fetch';
 
-let hostnames: string[] = [];
+enum IPStatus {
+  ACTIVE = "ACTIVE",
+  HANGING = "HANGING"
+}
+
+type IPAddress = {
+  address: string
+  status: IPStatus
+}
+
+type DnsList = {
+  [hostname: string]: IPAddress[]
+}
+
+type DnsResponse = {
+  Answer: { data: string }[]; 
+}
+
+const dnsList: DnsList = {};
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -14,28 +31,61 @@ function prompt(query: string): Promise<string> {
   return new Promise((resolve) => rl.question(query, resolve));
 }
 
-// Function to read hostnames from a file
 async function readHostnamesFile() {
   try {
-    const data = fs.readFileSync('src/hostnames.json', 'utf-8');
+    const data = JSON.parse(fs.readFileSync('src/hostnames.json', 'utf-8')) as string[];
     console.log("Hostnames from file:");
-    console.log(data);
-    hostnames = JSON.parse(data);
+    data.forEach(hostname => dnsList[hostname] = []);
   } catch (error) {
     console.error("Error reading hostnames file:", error);
   }
 }
 
 async function listHostnames() {
-  console.log("Listing hostnames:");
-  hostnames.forEach((hostname, index) => {
-    console.log(`${index + 1}. ${hostname}`);
-  });
+  console.log("Hostnames:");
+  for (const hostname in dnsList) {
+    console.log(hostname);
+    console.table(dnsList[hostname]);
+  }
 }
 
-// Function to perform a DNS refresh
+async function getDnsRecord(hostname: string) {
+  console.log(`Getting dns records for hostname: ${hostname}...`);
+  try {
+    const response = await fetch(`https://dns.google.com/resolve?name=${hostname}&type=A`);
+    const { Answer } = (await response.json()) as DnsResponse;
+    if (!Answer) {
+      console.log(`No DNS record found for ${hostname}`);
+      return;
+    }
+    const newIPAddressList: string[] = Answer.map((record: any) => record.data);
+    const newIPObjList: IPAddress[] = Answer.map((record: any) => ({
+      address: record.data,
+      status: IPStatus.ACTIVE
+    }));
+    const mergedIPs = [...new Set([...newIPObjList, ...dnsList[hostname]])];
+
+    dnsList[hostname] = mergedIPs.map((ip: IPAddress) => {
+      // if the ip is not from new list, it is no longer associated. set to HANGING
+      if (!newIPAddressList.includes(ip.address)) {
+        return {
+          address: ip.address,
+          status: IPStatus.HANGING,
+        }
+      }
+      return ip;
+    })
+    console.log(`Finished getting DNS record for ${hostname}`);
+  } catch (error) {
+    console.error("Error getting DNS: ", error);
+  }
+
+}
+
 async function dnsRefresh() {
- // todo
+  console.log(`Refreshing DNS...`)
+  await Promise.allSettled(Object.keys(dnsList).map(getDnsRecord))
+  listHostnames();
 }
 
 // Function to export the list to a file
@@ -46,18 +96,20 @@ async function exportListToFile() {
 // Main menu function
 async function mainMenu() {
   console.clear();
-  while (true) {
-    console.log(`
+  await readHostnamesFile();
+  console.log(`
 Welcome to
-  _____  _   _  _____             __               _       _            _   
- |  __ \\| \\ | |/ ____|           / _|             | |     | |          | |  
- | |  | |  \\| | (___    _ __ ___| |_ _ __ ___  ___| |__   | |_ ___  ___| |_ 
- | |  | | . \` |\\___ \\  | '__/ _ \\  _| '__/ _ \\/ __| '_ \\  | __/ _ \\/ __| __|
- | |__| | |\\  |____) | | | |  __/ | | | |  __/\\__ \\ | | | | ||  __/\\__ \\ |_ 
- |_____/|_| \\_|_____/  |_|  \\___|_| |_|  \\___||___/_| |_|  \\__\\___||___/\\__|
+_____  _   _  _____             __               _       _            _   
+|  __ \\| \\ | |/ ____|           / _|             | |     | |          | |  
+| |  | |  \\| | (___    _ __ ___| |_ _ __ ___  ___| |__   | |_ ___  ___| |_ 
+| |  | | . \` |\\___ \\  | '__/ _ \\  _| '__/ _ \\/ __| '_ \\  | __/ _ \\/ __| __|
+| |__| | |\\  |____) | | | |  __/ | | | |  __/\\__ \\ | | | | ||  __/\\__ \\ |_ 
+|_____/|_| \\_|_____/  |_|  \\___|_| |_|  \\___||___/_| |_|  \\__\\___||___/\\__|
 
-                                                                  by Lifan :)                                                                                  
+                                                                by Lifan :)                                                                                  
 `);
+  while (true) {
+    console.log("====================================");
     console.log("Select an option:");
     console.log("1. Read hostnames file");
     console.log("2. List hostnames with their IPs");
@@ -94,5 +146,4 @@ Welcome to
   }
 }
 
-// Start the main menu
 mainMenu();
