@@ -56,6 +56,10 @@ async function getDnsRecord(hostname: string) {
   console.log(`Getting dns records for hostname: ${hostname}...`);
   try {
     const response = await fetch(`https://dns.google.com/resolve?name=${hostname}&type=A`);
+    if (!response.ok) {
+      console.error(`Failed to fetch DNS records for ${hostname}: ${response.statusText}`);
+      return;
+    }
     const { Answer } = (await response.json()) as DnsResponse;
     if (!Answer) {
       console.log(`No DNS record found for ${hostname}`);
@@ -95,9 +99,12 @@ async function dnsRefresh() {
 }
 
 async function exportListToFile(filename: string) {
+
+  if (!filename.endsWith('.json')) filename += '.json';
+
   try {
     fs.writeFileSync(filename, JSON.stringify(dnsList, null, 2));
-    console.log(`DNS list exported to ${filename}.json`);
+    console.log(`DNS list exported to ${filename}`);
   } catch (error) {
     console.error("Error exporting DNS list:", error);
   }
