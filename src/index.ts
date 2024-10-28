@@ -22,7 +22,7 @@ type DnsResponse = {
 }
 
 const HANGING_THRESHOLD = 3;
-const DEFAULT_INPUT_FILE = '/src/hostnames.json';
+const DEFAULT_INPUT_FILE = 'src/hostnames.json';
 const DEFAULT_EXPORT_FILE = 'exported_hostnames.json';
 const EXPORT_DIR = 'exported';
 
@@ -173,6 +173,6 @@ _____  _   _  _____             __               _       _            _
   }
 }
 
-if (require.main === module) {
+if (!process.env.JEST_WORKER_ID) {
   mainMenu();
 }
