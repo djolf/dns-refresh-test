@@ -23,6 +23,8 @@ type DnsResponse = {
 
 const HANGING_THRESHOLD = 3;
 const DEFAULT_INPUT_FILE = 'src/hostnames.json';
+const DEFAULT_EXPORT_FILE = 'exported_hostnames.json';
+const EXPORT_DIR = 'exported';
 
 const dnsList: DnsList = {};
 
@@ -39,8 +41,9 @@ async function readHostnamesFile(filename: string) {
   if (!filename.endsWith('.json')) filename += '.json';
   try {
     const data = JSON.parse(fs.readFileSync(filename, 'utf-8')) as string[];
-    console.log("Hostnames from file:");
     data.forEach(hostname => dnsList[hostname] = []);
+    console.log("Hostnames from file: ");
+    console.table(dnsList);
   } catch (error) {
     console.error("Error reading hostnames file:", error);
   }
@@ -104,9 +107,13 @@ async function exportListToFile(filename: string) {
 
   if (!filename.endsWith('.json')) filename += '.json';
 
+  if (!fs.existsSync(EXPORT_DIR)) {
+    fs.mkdirSync(EXPORT_DIR);
+  }
+
   try {
-    fs.writeFileSync(filename, JSON.stringify(dnsList, null, 2));
-    console.log(`DNS list exported to ${filename}`);
+    fs.writeFileSync(`${EXPORT_DIR}/${filename}`, JSON.stringify(dnsList, null, 2));
+    console.log(`DNS list exported to ${EXPORT_DIR}/${filename}`);
   } catch (error) {
     console.error("Error exporting DNS list:", error);
   }
@@ -114,7 +121,6 @@ async function exportListToFile(filename: string) {
 
 async function mainMenu() {
   console.clear();
-  await readHostnamesFile(DEFAULT_INPUT_FILE);
   console.log(`
 Welcome to
 _____  _   _  _____             __               _       _            _   
@@ -126,6 +132,7 @@ _____  _   _  _____             __               _       _            _
 
                                                                 by Lifan :)                                                                                  
 `);
+  await readHostnamesFile(DEFAULT_INPUT_FILE);
   while (true) {
     console.log("====================================");
     console.log("Select an option:");
@@ -140,8 +147,8 @@ _____  _   _  _____             __               _       _            _
     switch (choice) {
       case '1':
         console.clear();
-        const importFilename = await prompt("Please provide a file name for the input file")
-        await readHostnamesFile(importFilename);
+        const importFilename = await prompt("Please provide a file name for the input file (empty for default file): ")
+        await readHostnamesFile(importFilename.length ? importFilename : DEFAULT_INPUT_FILE);
         break;
       case '2':
         console.clear();
@@ -152,8 +159,9 @@ _____  _   _  _____             __               _       _            _
         await dnsRefresh();
         break;
       case '4':
-        const exportFilename = await prompt("Please provide a file name for the exported file")
-        await exportListToFile(exportFilename);
+        console.clear();
+        const exportFilename = await prompt("Please provide a file name for the exported file (empty for default): ");
+        await exportListToFile(exportFilename.length ? exportFilename : DEFAULT_EXPORT_FILE);
         break;
       case '5':
         console.log("Goodbye!");

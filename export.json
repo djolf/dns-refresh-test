@@ -1,0 +1,44 @@
+{
+  "google.com": [
+    {
+      "address": "142.250.196.206",
+      "status": "ACTIVE",
+      "hangingCount": 0
+    }
+  ],
+  "youtube.com": [
+    {
+      "address": "172.217.163.46",
+      "status": "ACTIVE",
+      "hangingCount": 0
+    }
+  ],
+  "facebook.com": [
+    {
+      "address": "157.240.225.35",
+      "status": "ACTIVE",
+      "hangingCount": 0
+    }
+  ],
+  "wikipedia.org": [
+    {
+      "address": "208.80.153.224",
+      "status": "ACTIVE",
+      "hangingCount": 0
+    }
+  ],
+  "instagram.com": [
+    {
+      "address": "157.240.225.174",
+      "status": "ACTIVE",
+      "hangingCount": 0
+    }
+  ],
+  "x.com": [
+    {
+      "address": "104.244.42.193",
+      "status": "ACTIVE",
+      "hangingCount": 0
+    }
+  ]
+}
