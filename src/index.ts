@@ -1,8 +1,8 @@
 import readline from 'readline';
 import fs from 'fs';
-import fetch from 'node-fetch';
+import fetch from 'cross-fetch';
 
-enum IPStatus {
+export enum IPStatus {
   ACTIVE = "ACTIVE",
   HANGING = "HANGING"
 }
@@ -22,11 +22,11 @@ type DnsResponse = {
 }
 
 const HANGING_THRESHOLD = 3;
-const DEFAULT_INPUT_FILE = 'src/hostnames.json';
+const DEFAULT_INPUT_FILE = '/src/hostnames.json';
 const DEFAULT_EXPORT_FILE = 'exported_hostnames.json';
 const EXPORT_DIR = 'exported';
 
-const dnsList: DnsList = {};
+export const dnsList: DnsList = {};
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -37,7 +37,7 @@ function prompt(query: string): Promise<string> {
   return new Promise((resolve) => rl.question(query, resolve));
 }
 
-async function readHostnamesFile(filename: string) {
+export async function readHostnamesFile(filename: string) {
   if (!filename.endsWith('.json')) filename += '.json';
   try {
     const data = JSON.parse(fs.readFileSync(filename, 'utf-8')) as string[];
@@ -57,7 +57,7 @@ async function listHostnames() {
   }
 }
 
-async function getDnsRecord(hostname: string) {
+export async function getDnsRecord(hostname: string) {
   console.log(`Getting dns records for hostname: ${hostname}...`);
   try {
     const response = await fetch(`https://dns.google.com/resolve?name=${hostname}&type=A`);
@@ -97,13 +97,13 @@ async function getDnsRecord(hostname: string) {
 
 }
 
-async function dnsRefresh() {
+export async function dnsRefresh() {
   console.log(`Refreshing DNS...`)
   await Promise.allSettled(Object.keys(dnsList).map(getDnsRecord))
   listHostnames();
 }
 
-async function exportListToFile(filename: string) {
+export async function exportListToFile(filename: string) {
 
   if (!filename.endsWith('.json')) filename += '.json';
 
@@ -173,4 +173,6 @@ _____  _   _  _____             __               _       _            _
   }
 }
 
-mainMenu();
+if (require.main === module) {
+  mainMenu();
+}
