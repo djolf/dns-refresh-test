@@ -94,12 +94,15 @@ async function dnsRefresh() {
   listHostnames();
 }
 
-// Function to export the list to a file
-async function exportListToFile() {
-  // todo
+async function exportListToFile(filename: string) {
+  try {
+    fs.writeFileSync(filename, JSON.stringify(dnsList, null, 2));
+    console.log(`DNS list exported to ${filename}.json`);
+  } catch (error) {
+    console.error("Error exporting DNS list:", error);
+  }
 }
 
-// Main menu function
 async function mainMenu() {
   console.clear();
   await readHostnamesFile();
@@ -139,8 +142,8 @@ _____  _   _  _____             __               _       _            _
         await dnsRefresh();
         break;
       case '4':
-        console.clear();
-        await exportListToFile();
+        const filename = await prompt("Please provide a file name for the exported file (json)")
+        await exportListToFile(filename);
         break;
       case '5':
         console.log("Goodbye!");
