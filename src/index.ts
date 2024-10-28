@@ -22,6 +22,7 @@ type DnsResponse = {
 }
 
 const HANGING_THRESHOLD = 3;
+const DEFAULT_INPUT_FILE = 'src/hostnames.json';
 
 const dnsList: DnsList = {};
 
@@ -34,9 +35,10 @@ function prompt(query: string): Promise<string> {
   return new Promise((resolve) => rl.question(query, resolve));
 }
 
-async function readHostnamesFile() {
+async function readHostnamesFile(filename: string) {
+  if (!filename.endsWith('.json')) filename += '.json';
   try {
-    const data = JSON.parse(fs.readFileSync('src/hostnames.json', 'utf-8')) as string[];
+    const data = JSON.parse(fs.readFileSync(filename, 'utf-8')) as string[];
     console.log("Hostnames from file:");
     data.forEach(hostname => dnsList[hostname] = []);
   } catch (error) {
@@ -112,7 +114,7 @@ async function exportListToFile(filename: string) {
 
 async function mainMenu() {
   console.clear();
-  await readHostnamesFile();
+  await readHostnamesFile(DEFAULT_INPUT_FILE);
   console.log(`
 Welcome to
 _____  _   _  _____             __               _       _            _   
@@ -138,7 +140,8 @@ _____  _   _  _____             __               _       _            _
     switch (choice) {
       case '1':
         console.clear();
-        await readHostnamesFile();
+        const importFilename = await prompt("Please provide a file name for the input file")
+        await readHostnamesFile(importFilename);
         break;
       case '2':
         console.clear();
@@ -149,8 +152,8 @@ _____  _   _  _____             __               _       _            _
         await dnsRefresh();
         break;
       case '4':
-        const filename = await prompt("Please provide a file name for the exported file (json)")
-        await exportListToFile(filename);
+        const exportFilename = await prompt("Please provide a file name for the exported file")
+        await exportListToFile(exportFilename);
         break;
       case '5':
         console.log("Goodbye!");
